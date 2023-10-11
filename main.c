@@ -2,7 +2,12 @@
 #include<string.h>
 #include<ctype.h>
 
-typedef enum { FORWARD = 1, BACKWRAD = -1, IDLE = 0 } STATUS;
+#define FINGER_BEGIN    4
+#define FINGER_END      8
+
+typedef enum { UP = 1, DOWN, LEFT, RIGHT, LOWER, UPPER, GRAB, LETGO} COMMAND;
+
+typedef enum { FORWARD = 1, BACKWARD = -1, IDLE = 0 } STATUS;
 
 typedef struct Motor{ STATUS status; } Motor;
 
@@ -11,19 +16,24 @@ typedef struct Crane { int x, y, z; } Crane;
 Motor motor[9];
 Crane crane;
 
-void Up();
-void Down();
-void Left();
-void Right();
+void Up(int distance);
+void Down(int distance);
+void Left(int distance);
+void Right(int distance);
 void Lower();
 void Upper();
 void Grab();
 void LetGo();
+void Err(int index, char *status);
 
 int main() {
-    char command[10];
+    int command;
     
-    do {
+    crane.x = 0;
+    crane.y = 0;
+    crane.z = 0;
+    
+    while(1){
         printf("=== 절차지향 크레인 프로그램 : 명령어를 입력하세요 ===\n");
         printf("[1] UP : 크레인을 위로 이동\n");
         printf("[2] DOWN : 크레인을 아래로 이동\n");
@@ -32,89 +42,130 @@ int main() {
         printf("[5] LOWER : 크레인의 집게 내리기\n");
         printf("[6] UPPER : 크레인의 집게 올리기\n");
         printf("[7] GRAB : 크레인의 집게 로 물건 집기\n");
-        printf("[7] LETGO : 크레인의 집게 로 물건 놓기\n");
+        printf("[8] LETGO : 크레인의 집게 로 물건 놓기\n");
 
-        scanf("%s", command);
+        printf("> ");
+        scanf("%d", &command);
+
+        int distance = 0;
         
-        if(command == "UP") Up();
-        else if(command == "DOWN") {
-            
+        if(command == UP) {
+            printf("움직일 거리를 입력하세요 > ");
+            scanf("%d", &distance);
+            Up(distance);
         }
-        else if(command == "LEFT"){
-
+        else if(command == DOWN) {
+            printf("움직일 거리를 입력하세요 > ");
+            scanf("%d", &distance);
+            Down(distance);
         }
-        else if(command == "RIGHT"){
-
+        else if(command == LEFT){
+            printf("움직일 거리를 입력하세요 > ");
+            scanf("%d", &distance);
+            Left(distance);
         }
-        else if(command == "LOWER") {
-
+        else if(command == RIGHT){
+            printf("움직일 거리를 입력하세요 > ");
+            scanf("%d", &distance);
+            Right(distance);
         }
-        else if(command == "UPPER"){
+        else if(command == LOWER) Lower();
+        else if(command == UPPER) Upper();
+        else if(command == GRAB) Grab();
+        else if(command == LETGO) LetGo();
+        else{
+            printf("[ERROR] : 올바른 명령어가 아닙니다!");
+            continue;
+        } 
 
-        }
-        else if(command == "GRAB"){
-
-        }
-        else if(command == "LETGO"){
-
-        }
+        printf("현재 크레인 좌표 (x, y, z) = (%d, %d, %d)\n", crane.x, crane.y, crane.z);
 
 
-    } while(strcmp(command, "Quit"));
+    }
 
     return 0;
 }
 
 // 
 
-void Up(){
+void Err(int index, char * status) {
+    printf("[ERROR] : motor[%d] 의 상태는 이미 %s 입니다", index, status);
+}
+
+void Up(int distance){
     if(motor[2].status == IDLE){
         motor[2].status = FORWARD;
-        crane.y += FORWARD;
+        crane.y += FORWARD * distance;
         motor[2].status = IDLE;
     }
 }
 
-void Down(){
+void Down(int distance){
     if(motor[2].status == IDLE){
-        motor[2].status = BACKWRAD;
-        crane.y += BACKWRAD;
+        motor[2].status = BACKWARD;
+        crane.y += BACKWARD * distance;
         motor[2].status = IDLE;
     }
 }
 
-void Left() {
+void Left(int distance) {
     if(motor[1].status == IDLE){
-        motor[1].status = BACKWRAD;
-        crane.x += BACKWRAD;
+        motor[1].status = BACKWARD;
+        crane.x += BACKWARD * distance;
         motor[1].status = IDLE;
     }
 }
 
-void Right() {
+void Right(int distance) {
     if(motor[1].status == IDLE){
         motor[1].status = FORWARD;
-        crane.x += FORWARD;
+        crane.x += FORWARD * distance;
         motor[1].status = IDLE;
     }
 }
 
 void Lower() {
-    if(motor[3].status == IDLE) {
-        motor[3].status = FORWARD;
-        crane.z += FORWARD;
+    if(motor[3].status == FORWARD){
+        Err(3, "FORWARD");
+        return;
     }
-    else if(motor[3].status == FORWARD){
-        printf("motor[3] 의 상태는 이미 FORWARD 입니다");
-    }
+    motor[3].status = FORWARD;
+    crane.z += FORWARD;
 }
 
 void Upper() {
-    if(motor[3].status == IDLE){
-        motor[3].status = BACKWRAD;
-        crane.z += BACKWRAD;
-        motor[3].status = IDLE;
+    if(motor[3].status == BACKWARD) {
+        Err(3, "BACKWARD");
+        return;
+    }
+    motor[3].status = BACKWARD;
+    crane.z += BACKWARD;
+}
+
+void FingerGrab(int fingerIndex) {
+    if(motor[fingerIndex].status == FORWARD){
+        Err(fingerIndex, "FORWARD");
+        return;
+    }
+    motor[fingerIndex].status = FORWARD;
+}
+
+void FingerLetgo(int fingerIndex) {
+    if(motor[fingerIndex].status == BACKWARD){
+        Err(fingerIndex, "BACKWARD");
+        return;
+    }
+    motor[fingerIndex].status = BACKWARD;
+}
+
+void Grab() {
+    for(int index = FINGER_BEGIN ; index < FINGER_END ; index++){
+        FingerGrab(index);
     }
 }
-void Grab();
-void LetGo();`
+
+void LetGo() {
+    for(int index = FINGER_BEGIN ; index < FINGER_END ; index++){
+        FingerLetgo(index);
+    }
+}
