@@ -103,7 +103,9 @@ void Lower() {
     if(motor[3].status == IDLE) {
         motor[3].status = FORWARD;
         crane.z += FORWARD;
-        motor[3].status = IDLE;
+    }
+    else if(motor[3].status == FORWARD){
+        printf("motor[3] 의 상태는 이미 FORWARD 입니다");
     }
 }
 
@@ -115,4 +117,4 @@ void Upper() {
     }
 }
 void Grab();
-void LetGo();
+void LetGo();`
