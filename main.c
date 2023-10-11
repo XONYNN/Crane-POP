@@ -16,14 +16,15 @@ typedef struct Crane { int x, y, z; } Crane;
 Motor motor[9];
 Crane crane;
 
-void Left(int distance);
-void Right(int distance);
 void Up(int distance);
 void Down(int distance);
+void Left(int distance);
+void Right(int distance);
 void Lower();
 void Upper();
 void Grab();
 void LetGo();
+void ActMoter(int index, int distance);
 void Err(int index, char *status);
 
 int main() {
@@ -32,9 +33,12 @@ int main() {
     crane.x = 0;
     crane.y = 0;
     crane.z = 0;
+
+    for(int i = 1; i < FINGER_BEGIN; i++) motor[i].status = IDLE;
+    for(int i = FINGER_BEGIN; i <= FINGER_END; i++) motor[i].status = BACKWARD;
     
     while(1){
-        printf("=== 절차지향 크레인 프로그램 : 명령어를 입력하세요 ===\n");
+        printf("\n=== 절차지향 크레인 프로그램 : 명령어를 입력하세요 ===\n");
         printf("[1] LEFT : 크레인을 왼쪽으로 이동\n");
         printf("[2] RIGHT : 크레인을 오른쪽으로 이동\n");
         printf("[3] UP : 크레인을 위로 이동\n");
@@ -83,15 +87,20 @@ int main() {
             continue;
         } 
 
-        printf("현재 크레인 좌표 (x, y, z) = (%d, %d, %d)\n", crane.x, crane.y, crane.z);
-
+        printf("\n[STATUS] : 현재 크레인 좌표 (x, y, z) = (%d, %d, %d)\n", crane.x, crane.y, crane.z);
+        printf("\n[STATUS] : 현재 집게 상태\n");
+        for(int i = FINGER_BEGIN; i <= FINGER_END; i++){
+            printf("[MOTOR %d] : ", i);
+            if(motor[i].status == FORWARD) printf("FORWARD\n");
+            else printf("BACKWARD\n");
+        }
 
     }
 
     return 0;
 }
 
-// 
+/*-------------------------------------------------------------------------*/
 
 void Err(int index, char * status) {
     printf("[ERROR] : motor[%d] 의 상태는 이미 %s 입니다\n", index, status);
@@ -100,7 +109,10 @@ void Err(int index, char * status) {
 void Left(int distance) {
     if(motor[1].status == IDLE){
         motor[1].status = BACKWARD;
+
+        printf("1번 모터로 %d 만큼 좌측으로 이동중...\n", distance);
         crane.x += BACKWARD * distance;
+
         motor[1].status = IDLE;
     }
 }
@@ -108,7 +120,10 @@ void Left(int distance) {
 void Right(int distance) {
     if(motor[1].status == IDLE){
         motor[1].status = FORWARD;
+
+        printf("1번 모터로 %d 만큼 우측으로 이동중...\n", distance);
         crane.x += FORWARD * distance;
+
         motor[1].status = IDLE;
     }
 }
@@ -116,7 +131,10 @@ void Right(int distance) {
 void Up(int distance){
     if(motor[2].status == IDLE){
         motor[2].status = FORWARD;
+
+        printf("2번 모터로 %d 만큼 위로 이동중...\n", distance);
         crane.y += FORWARD * distance;
+        
         motor[2].status = IDLE;
     }
 }
@@ -124,18 +142,23 @@ void Up(int distance){
 void Down(int distance){
     if(motor[2].status == IDLE){
         motor[2].status = BACKWARD;
+
+        printf("2번 모터로 %d 만큼 아래로 이동중...\n", distance);
+        //sleep(distance);
         crane.y += BACKWARD * distance;
+
         motor[2].status = IDLE;
     }
 }
-
 
 void Lower() {
     if(motor[3].status == FORWARD){
         Err(3, "FORWARD");
         return;
     }
+    printf("3번 모터로 크레인 내리는 중...\n");
     motor[3].status = FORWARD;
+
     crane.z += FORWARD;
 }
 
@@ -144,7 +167,9 @@ void Upper() {
         Err(3, "BACKWARD");
         return;
     }
+    printf("3번 모터로 크레인 올리는 중...\n");
     motor[3].status = BACKWARD;
+
     crane.z += BACKWARD;
 }
 
@@ -153,6 +178,8 @@ void FingerGrab(int fingerIndex) {
         Err(fingerIndex, "FORWARD");
         return;
     }
+
+    printf("%d번 모터 집게 접는 중...\n", fingerIndex);
     motor[fingerIndex].status = FORWARD;
 }
 
@@ -161,17 +188,19 @@ void FingerLetgo(int fingerIndex) {
         Err(fingerIndex, "BACKWARD");
         return;
     }
+    
+    printf("%d번 모터 집게 펴는 중...\n", fingerIndex);
     motor[fingerIndex].status = BACKWARD;
 }
 
 void Grab() {
-    for(int index = FINGER_BEGIN ; index < FINGER_END ; index++){
+    for(int index = FINGER_BEGIN ; index <= FINGER_END ; index++){
         FingerGrab(index);
     }
 }
 
 void LetGo() {
-    for(int index = FINGER_BEGIN ; index < FINGER_END ; index++){
+    for(int index = FINGER_BEGIN ; index <= FINGER_END ; index++){
         FingerLetgo(index);
     }
 }
